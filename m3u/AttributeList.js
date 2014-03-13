@@ -21,7 +21,8 @@ var dataTypes = AttributeList.dataTypes = {
   'title'      : 'enumerated-string',
   'type'       : 'enumerated-string',
   'uri'        : 'quoted-string',
-  'video'      : 'quoted-string'
+  'video'      : 'quoted-string',
+  'sequence'   : 'decimal-integer'
 };
 
 AttributeList.prototype.mergeAttributes = function mergeAttributes(attributes) {
@@ -39,7 +40,9 @@ AttributeList.prototype.get = function getValue(key) {
 
 AttributeList.prototype.set = function setValue(key, value) {
   key = key.toLowerCase();
-  this.attributes[key] = parse[dataTypes[key] || 'unknown'](value, key);
+
+  var stuff = parse[dataTypes[key] || 'unknown'](value, key);
+  this.attributes[key] = stuff;
 
   return this;
 };

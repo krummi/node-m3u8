@@ -68,9 +68,17 @@ m3uParser.prototype.parseLine = function parseLine(line) {
 
 m3uParser.prototype.createPlaylistItem = function () {
   var item = new PlaylistItem();
+
+  // Attach the encryption key if available.
   if (this.currentKey !== null) {
     item.set('key', this.currentKey);
   }
+
+  // Also attach the sequence number.
+  // console.log('mediaSequence: ' + this.currentSequenceNo);
+  item.set('sequence', this.currentSequenceNo);
+  this.currentSequenceNo++;
+
   return item;
 };
 
@@ -78,6 +86,11 @@ m3uParser.prototype.addItem = function addItem(item) {
   this.m3u.addItem(item);
   this.currentItem = item;
   return item;
+};
+
+m3uParser.prototype['EXT-X-MEDIA-SEQUENCE'] = function parseMediaSequence(item) {
+  this.m3u.set('mediaSequence', item);
+  this.currentSequenceNo = item;
 };
 
 m3uParser.prototype['EXTINF'] = function parseInf(data) {
