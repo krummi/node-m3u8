@@ -37,6 +37,13 @@ describe('parsing playlist m3u8', function() {
         item.get('duration').should.equal(10);
         item.get('byteRange').should.equal('522828@0');
         item.get('uri').should.equal('hls_450k_video.ts');
+        item.get('key').uri.should.equal('http://www.nowhere.com/first-key');
+
+        var middleItem = m3u.items.PlaylistItem[6];
+        middleItem.get('key').uri.should.equal('http://www.nowhere.com/second-key');
+
+        var lastItem = m3u.items.PlaylistItem[16];
+        lastItem.get('key').uri.should.equal('http://www.nowhere.com/second-key');
 
         done();
       });

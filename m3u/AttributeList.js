@@ -118,7 +118,7 @@ var parse = {
     }
   },
   'unknown': function parseUnknown(value, key) {
-    console.error('Handling value:', value, ' for unknown key:', key);
+    //console.error('Handling value:', value, ' for unknown key:', key);
     return value;
   }
 };

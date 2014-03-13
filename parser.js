@@ -13,7 +13,8 @@ var m3uParser = module.exports = function m3uParser() {
   ChunkedStream.apply(this, ['\n', true]);
 
   this.linesRead = 0;
-  this.m3u = new M3U;
+  this.m3u = new M3U();
+  this.currentKey = null;
 
   this.on('data', this.parse.bind(this));
   var self = this;
@@ -27,13 +28,13 @@ util.inherits(m3uParser, ChunkedStream);
 m3uParser.M3U = M3U;
 
 m3uParser.createStream = function() {
-  return new m3uParser;
+  return new m3uParser();
 };
 
 m3uParser.prototype.parse = function parse(line) {
   line = line.trim();
-  if (this.linesRead == 0) {
-    if (line != '#EXTM3U') {
+  if (this.linesRead === 0) {
+    if (line !== '#EXTM3U') {
       return this.emit('error', new Error(
         'Non-valid M3U file. First line: ' + line
       ));
@@ -42,11 +43,11 @@ m3uParser.prototype.parse = function parse(line) {
     return true;
   }
   if (['', '#EXT-X-ENDLIST'].indexOf(line) > -1) return true;
-  if (line.indexOf('#') == 0) {
+  if (line.indexOf('#') === 0) {
     this.parseLine(line);
   } else {
-    if (this.currentItem.attributes.uri != undefined) {
-      this.addItem(new PlaylistItem);
+    if (this.currentItem.attributes.uri !== undefined) {
+      this.addItem(this.createPlaylistItem());
     }
     this.currentItem.set('uri', line);
     this.emit('item', this.currentItem);
@@ -58,11 +59,19 @@ m3uParser.prototype.parseLine = function parseLine(line) {
   var parts = line.slice(1).split(/:(.*)/);
   var tag   = parts[0];
   var data  = parts[1];
-  if (typeof this[tag] == 'function') {
+  if (typeof this[tag] === 'function') {
     this[tag](data, tag);
   } else {
     this.m3u.set(tag, data);
   }
+};
+
+m3uParser.prototype.createPlaylistItem = function () {
+  var item = new PlaylistItem();
+  if (this.currentKey !== null) {
+    item.set('key', this.currentKey);
+  }
+  return item;
 };
 
 m3uParser.prototype.addItem = function addItem(item) {
@@ -72,7 +81,7 @@ m3uParser.prototype.addItem = function addItem(item) {
 };
 
 m3uParser.prototype['EXTINF'] = function parseInf(data) {
-  this.addItem(new PlaylistItem);
+  this.addItem(this.createPlaylistItem());
 
   data = data.split(',');
   this.currentItem.set('duration', parseFloat(data[0]));
@@ -81,6 +90,23 @@ m3uParser.prototype['EXTINF'] = function parseInf(data) {
 
 m3uParser.prototype['EXT-X-BYTERANGE'] = function parseByteRange(data) {
   this.currentItem.set('byteRange', data);
+};
+
+m3uParser.prototype['EXT-X-KEY'] = function (data) {
+  data = this.parseAttributes(data);
+
+  var keys = {};
+  for (var i = 0; i < data.length; i++) {
+    var key = data[i]['key'].toLowerCase();
+    var val = data[i]['value'];
+    if (key === 'uri') {
+      keys[key] = val.replace(/\"/g, '');
+    } else {
+      keys[key] = val;
+    }
+  }
+
+  this.currentKey = keys;
 };
 
 m3uParser.prototype['EXT-X-STREAM-INF'] = function(data) {
